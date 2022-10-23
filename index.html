@@ -1,12 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project 1 Homepage</title>
+    <style>
+    	text { 
+			font-family: Arial; 
+			font-size: 15px;
+		}
+		.axis path, .axis line {
+			fill: none;
+			stroke: black;
+			shape-rendering: crispEdges;
+		}
+		.tick text {
+			fill: black;
+			font-size: 11px;
+		}
+
+		rect {
+			stroke: white;
+		}
+	</style>
 </head>
 <body>
-    <p>Hello World.</p>
+
+    <svg id="main" width="600" height="600">
+		<text id="label" x="20" y="20">Energy prodcution for the US</text>
+		<g transform="translate(20,40)">
+		
+
+	</svg>
+
+	<script>
+
+		var LINE_WIDTH = 2;
+
+		var streets = [ ];
+
+		function drawBarChart() 
+		{
+			var selection = d3.select('svg').select('g').selectAll('line').data(streets);
+
+			var lines = selection.enter().append('line');
+			
+			lines.attr('width', LINE_WIDTH)
+			
+			lines.attr("x1", function(d) { return d[0].x; } )
+            lines.attr("x2", function(d) { return d[1].x; } )
+            lines.attr("y1", function(d) { return d[0].y; } )
+            lines.attr("y2", function(d) { return d[1].y; } )
+		}
+			
+
+		d3.JSON('https://khreda.com/teaching/fall22/H517/project1/cholera_data/streets.json', function(data) 
+		{            
+			for (var i = 0; i < data.length; i++) 
+			{
+				var value = record[year];	
+				streets.push(+value);
+			}
+
+			drawBarChart();
+
+		});
+		
+	</script>
+
+
+
+
 </body>
 </html>
