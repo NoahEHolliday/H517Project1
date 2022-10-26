@@ -21,57 +21,394 @@
 			font-size: 11px;
 		}
 
-		rect {
-			stroke: white;
+		line {
+			stroke-width: 1;
+			stroke: black;
 		}
-	</style>
+
+		ellipse {
+			fill:red
+		}
+
+        .links {
+            justify-content: space-around;
+        }
+    </style>
 </head>
 <body>
+    <div class="links">
+        <a href="https://noaheholliday.github.io/H517Project1/index.html">Vizualization</a>
+        <a href="https://noaheholliday.github.io/H517Project1/About.html">About Page</a>
+		<a href="https://indiana-my.sharepoint.com/:w:/g/personal/noevholl_iu_edu/EZRLimUL77lNqMpcmJV28moBuzR0GY6qKSYVBQqh8dye6w?e=A65TRf">Documentation</a>.
+        <a href="https://www.youtube.com/watch?v=7dpAh8Mym4o">Demonstration YT Video </a>
+    </div>
 
-    <svg id="main" width="600" height="600">
-		<text id="label" x="20" y="20">Energy prodcution for the US</text>
-		<g transform="translate(20,40)">
-		
-
-	</svg>
-
+	<div class="slidecontainer">
+		<!-- input silder for date range 1 means first day 42 means 42nd day-->
+		<input type="range" min="1" max="42" value="1" class="slider" id="myRange">
+		<rect x="10" y="20", height = "10", width = "10"></rect>
+	</div>
+	<p id="Date">19-Aug</p>
+	<div id="dataviz"></div>
+	<div id="PieChart1"></div>
+	<div id="PieChart2"></div>
 	<script>
+		//Get my active date slicer and output date string for front end
+		var slider = document.getElementById("myRange");
+		var output = document.getElementById("Date");
 
-		var LINE_WIDTH = 2;
-
+		//Creating base tables
 		var streets = [ ];
+		var pumps = [ ];
+		var deaths = [ ];
+		var NumOfDeaths_Stage = []
+		var DateOfDeaths_Stage = []
 
-		function drawBarChart() 
+		//variable for my two piecharts
+		radius = Math.min(400, 400) / 2;
+
+		//If
+		slider.oninput = function() {
+			output.innerHTML = DateOfDeaths_Stage[this.value - 1];
+			DrawTexts(DateOfDeaths_Stage[this.value - 1])
+			UpdateSVG(this.value)
+		}
+
+		// append the svg object to the body of the page with the ability to zoom by calling transform when zoom event occurs. For map and timeline chart
+		var svg = d3.select("#dataviz")
+		.append("svg")
+			.attr("width",  1000)
+			.attr("height",  870)
+			//the ability to pan and zoom
+			.call(d3.zoom().on("zoom", function () {
+			svg.attr("transform", d3.event.transform)
+			}))
+		.append("g")
+
+		//creation of a new svg item that has the ability to transform to accomodate for moving items. For first pie chart
+		var svg2 = d3.select("#PieChart1")
+		.append("svg")
+			.attr("width",  1000)
+			.attr("height",  400)
+			.call(d3.zoom().on("zoom", function () {
+			svg.attr("transform", d3.event.transform)
+			}))
+		.append("g").attr("transform", "translate(200, 200)");
+
+		//creation of a new svg item that has the ability to transform to accomodate for moving items. For second pie chart
+		var svg3 = d3.select("#PieChart2")
+		.append("svg")
+			.attr("width",  1000)
+			.attr("height",  400)
+			.call(d3.zoom().on("zoom", function () {
+			svg.attr("transform", d3.event.transform)
+			}))
+		.append("g").attr("transform", "translate(200, 200)");
+
+		function DrawTexts(Day) {
+			var DayString = "19 Aug - "
+			var DayString = DayString.concat(String(Day))
+			d3.select('svg').select('g').selectAll("text").remove()
+
+			d3.select('svg').select('g').append("text").text(DayString).attr("x", 230).attr("y", 840)
+
+			d3.select('svg').select('g').append("text").text("Deaths Per Day").attr("transform", "translate(8, 685) rotate(90)")
+
+			d3.select('svg').select('g').append("text").text("Brewery").attr("transform", "translate(415, 380) rotate(-70)")
+
+			d3.select('svg').select('g').append("text").text("Work House").attr("transform", "translate(355, 390) rotate(33)")
+
+			d3.select('svg').select('g').append("text").text("Pump Locations").attr("x", 670).attr("y", 125)
+
+			d3.select('svg').select('g').append("text").text("Male Death Locations").attr("x", 670).attr("y", 150)
+
+			d3.select('svg').select('g').append("text").text("Female Death Locations").attr("x", 670).attr("y", 175)
+		}
+
+		function UpdateSVG(Day) {
+			var total = 0
+			var dataDivide = []
+			//only get the records between the first day and selected day
+         	dataDivide.push(NumOfDeaths_Stage.slice(0, Day));
+			counter = 0
+			for (i = 0; i < dataDivide[0].length; i++) {
+				//Only bring the top amount of deaths according to sum based of day.
+				total += Number(dataDivide[0][i])
+			}
+			
+			//draw all charts and visuals
+			drawDeaths(total);
+			drawBarChart(Day);
+			drawPieCharts(total);
+		}
+
+		function drawStreets() 
 		{
+			//draws lines based off the streets json
 			var selection = d3.select('svg').select('g').selectAll('line').data(streets);
 
 			var lines = selection.enter().append('line');
-			
-			lines.attr('width', LINE_WIDTH)
-		
-			lines.attr("x1", function(d) { return d[0].x; } )
-            lines.attr("x2", function(d) { return d[1].x; } )
-            lines.attr("y1", function(d) { return d[0].y; } )
-            lines.attr("y2", function(d) { return d[1].y; } )
-		}
-			
 
-		d3.JSON('https://khreda.com/teaching/fall22/H517/project1/cholera_data/streets.json', function(data) 
+			lines.attr("x1", function(d) { return d[0] * 30; } )
+			lines.attr("y1", function(d) { return d[1] * 30; } )
+			lines.attr("x2", function(d) { return d[2] * 30; } )
+			lines.attr("y2", function(d) { return d[3] * 30; } )
+		};
+
+		function drawPumps() 
+		{
+			var selection = d3.select('svg').select('g').selectAll('ellipse').data(pumps);
+
+			var ellipses = selection.enter().append('ellipse');
+
+			ellipses.attr("cx", function(d) { return d[0] * 30; } )
+			ellipses.attr("cy", function(d) { return d[1] * 30; } )
+			ellipses.attr("rx", function(d) { return 14; } )
+			ellipses.attr("ry", function(d) { return 7; } )
+
+			d3.select('svg').select('g').append("ellipse").attr("cx", 650).attr("cy", 120).attr("rx", 14).attr("ry", 7)
+		};
+			
+		function drawBarChart(Day)
+		{
+			d3.select('svg').select('g').selectAll('rect').remove();
+			var selection = d3.select('svg').select('g').selectAll('rect').data(NumOfDeaths_Stage);
+			var rectangles = selection.enter().append('rect');
+
+			//defaults the opacity of the deaths to invisible
+			rectangles.attr("opacity", 0)
+
+			rectangles.attr("width", 10)
+
+			rectangles.attr('height', function(d, i) {
+				return d;
+			})
+			
+			rectangles.attr('x', function(d, i) {
+				return (12 * i) + 20;
+			})
+
+			rectangles.attr('y', function(d, i) {
+				return 800 - d;
+			})
+
+			rectanglesAmount = rectangles.nodes();
+			//Only bring the top amount of deaths according to sum based of day.
+			for (i = 0; i < Day; i ++) {
+				d3.select(rectanglesAmount[i]).attr("opacity", 1)
+			}
+		}
+
+		function drawDeaths(dead) 
+		{
+			d3.select('svg').select('g').selectAll('circle').remove();
+			var selection = d3.select('svg').select('g').selectAll('circle').data(deaths);
+			var circles = selection.enter().append('circle');
+
+			//defaults the opacity of the deaths to invisible
+			circles.attr("opacity", 0)
+
+			circles.attr("cx", function(d) { return d[0] * 30; } )
+			circles.attr("cy", function(d) { return d[1] * 30; } )
+			circles.attr("r", function(d) { return 2; } )
+			circles.attr("class", function(d) { return "Person"; } )
+			circles.style("fill", function(d) {
+				if(d[3] == "0") {
+					return "blue";
+			 	} else {
+					return "pink";
+				} 
+			});
+
+			circles.append("text").text(function(d) {
+				return String(d[2])})
+
+			circlesAmount = circles.nodes();
+			//Only bring the top amount of deaths according to sum based of day.
+			for (i = 0; i < dead; i ++) {
+				d3.select(circlesAmount[i]).attr("opacity", 1)
+			}
+			
+			d3.select('svg').select('g').append("circle").attr("cx", 650).attr("cy", 145).attr("r", 3).attr("fill", "blue")
+			d3.select('svg').select('g').append("circle").attr("cx", 650).attr("cy", 170).attr("r", 3).attr("fill", "pink")
+		}
+
+		function drawPieCharts(dead) 
+		{	
+			svg2.append("text").text("Gender VS Death").attr("x", 220).attr("y", 10)
+			svg3.append("text").text("Age VS Death").attr("x", 220).attr("y", 10)
+			var GenderBreakdown = []
+			var GenderCategories = ["0", "1"]
+			for (i = 0; i <= GenderCategories.length; i++) {
+				total = 0 
+				for (i2 = 0; i2 < dead; i2++) {
+					if (GenderCategories[i] == deaths[i2][3]) {	
+						total += 1
+					}
+				}
+				var record = [i, total, GenderCategories[i], dead]
+				GenderBreakdown.push(record)
+			}
+
+			colors = ['#ffd384','#94ebcd','#fbaccc','#d3e0ea','#fa7f72']
+
+			//coded variables from pie arc.append.attr.text was sourced for helper website on how to make a piechart. All data movement was personal work to integrate with snippit. 
+			var pie = d3.pie().value(function(d) { 
+                return d[1]; 
+            });
+			
+        	var arc = svg2.selectAll("arc")
+                   .data(pie(GenderBreakdown))
+                   .enter();
+
+			var path = d3.arc()
+                     .outerRadius(radius)
+                     .innerRadius(0);
+
+			arc.append("path")
+			.attr("d", path)
+			.attr("fill", function(d, i) { 
+				return colors[i]; });
+		
+			var label = d3.arc()
+                      .outerRadius(radius)
+                      .innerRadius(0);
+            
+			arc.append("text")
+			.attr("transform", function(d) { 
+						return "translate(" + label.centroid(d) + ")"; 
+				})
+			.text(function(d) { 
+				if (d.data[1] == 0) {
+					return ""
+				}
+				else if (d.data[2] == "0") {
+					return 'Male - ' + String(d.data[1])
+				}
+				else {
+					return 'Female - ' + String(d.data[1])
+				}})
+			.style("font-family", "arial")
+			.style("font-size", 15);
+
+			//////
+
+			var AgeBreakdown = []
+			var AgeCategories = ["0", "1", "2", "3", "4", "5"]
+			for (i = 0; i <= AgeCategories.length; i++) {
+				total = 0 
+				for (i2 = 0; i2 < dead; i2++) {
+					if (AgeCategories[i] == deaths[i2][2]) {	
+						total += 1
+					}
+				}
+				var record = [i, total, AgeCategories[i]]
+				AgeBreakdown.push(record)
+			}
+
+			colors = ['#ffd384','#94ebcd','#fbaccc','#d3e0ea','#fa7f72', '#BDECB6']
+
+			//coded variables from pie arc.append.attr.text was sourced for helper website on how to make a piechart. All data movement was personal work to integrate with snippit. 
+			var pie = d3.pie().value(function(d) { 
+                return d[1]; 
+            });
+			
+        	var arc = svg3.selectAll("arc")
+                   .data(pie(AgeBreakdown))
+                   .enter();
+
+			var path = d3.arc()
+                     .outerRadius(radius)
+                     .innerRadius(0);
+
+			arc.append("path")
+			.attr("d", path)
+			.attr("fill", function(d, i) { 
+				return colors[i]; });
+		
+			var label = d3.arc()
+                      .outerRadius(radius)
+                      .innerRadius(0);
+            
+			arc.append("text")
+			.attr("transform", function(d) { 
+						return "translate(" + label.centroid(d) + ")"; 
+				})
+			.text(function(d) { 
+				if (d.data[1] == 0) {
+					return ""
+				}
+				else {
+					return String(d.data[2]) + ' - ' + String(d.data[1])
+				}})
+			.style("font-family", "arial")
+			.style("font-size", 15);
+		}
+
+		d3.csv('./datasets/deaths_age_sex.csv', function(data) 
 		{            
 			for (var i = 0; i < data.length; i++) 
 			{
-				var value = record[year];	
-				streets.push(+value);
+				var valuex = data[i].x;	
+				var valuey = data[i].y;	
+				var valueage = data[i].age;	
+				var valuegender = data[i].gender;	
+				var pair = [valuex, valuey, valueage, valuegender]
+				deaths.push(pair);
 			}
 
-			drawBarChart();
+			//on first load just load one death since on the first day only one death occured
+			UpdateSVG(1);
+		});
+
+		//just collect deaths, no need to call another function since it is not drawing.
+		d3.csv('./datasets/deathdays.csv', function(data) 
+		{            
+			for (var i = 0; i < data.length; i++) 
+			{
+				var NumberOfDeaths = data[i].deaths;	
+				NumOfDeaths_Stage.push(NumberOfDeaths);
+			}
+		});
+
+		//collecting dates into seperate dataset for simplicity
+		d3.csv('./datasets/deathdays.csv', function(data) 
+		{            
+			for (var i = 0; i < data.length; i++) 
+			{
+				var DateOfDeaths = data[i].date;	
+				DateOfDeaths_Stage.push(DateOfDeaths);
+			}
+		});
+
+		d3.csv('./datasets/pumps.csv', function(data) 
+		{            
+			for (var i = 1; i < data.length; i++) 
+			{
+				var valuex = data[i].x;	
+				var valuey = data[i].y;	
+				var pair = [valuex, valuey]
+				pumps.push(pair);
+			}
+
+			drawPumps();
+		});
+
+		d3.json('./datasets/streets.json', function(data) 
+		{            
+			for (var i = 0; i < data.length; i++) 
+			{
+				var valuex = data[i][0].x;	
+				var valuey = data[i][0].y;	
+				var valuex2 = data[i][1].x;	
+				var valuey2 = data[i][1].y;	
+				var pair = [valuex, valuey, valuex2, valuey2]
+				streets.push(pair);
+			}
+
+			drawStreets();
 
 		});
-		
 	</script>
-
-
-
-
 </body>
 </html>
